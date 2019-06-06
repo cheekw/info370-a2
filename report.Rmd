@@ -1,0 +1,140 @@
+---
+title: "Segregation Metrics"
+output: html_document
+---
+
+This is a report investigating the levels of segregation in 14 cities. This is an admittedly crude measure of racial composition and is not meant to imply a unified social experience for non-white racial minorities.  
+
+```{r, message=F}
+# Set up (install packages if you don't have them)
+library(dplyr)
+library(knitr)
+library(ggplot2)
+library(plotly)
+library(gridExtra)
+library(reshape2)
+
+# Gets the analysis data needed for the report
+source('analysis.R')
+```
+
+## Metric Definitions
+
+### Dissimilarity index
+$$\frac{\sum_{i=1}^n[t_i|(p_i-P)|]}{[2T^2P(1-P)]}$$
+Where:
+
+$t_i$ is the total population of area i
+
+$p_i$ is the proportion of area i's population that is minority
+
+
+$P$ is the proportion of the metropolitan area's population that is minority
+
+$T$ is the total population of all areas
+
+The dissimilarity index is a type of measure of the evenness that the minority group is distributed across areas. It shows the percentage of the minority group's population that would have to move to a different area in order to produce the same percentage that matches the overall area. The metric goes from 0.0 to 1.0 (from complete integration to complete segregation, respictively). This type of metric allows for a good measure of how the minorities are distributed across the different areas. But it noticeably overlooks the majority population and other features that could be important in measuring segregation. Some of these include the interactions that may occur between the different minority and majority groups, the population density within the regions, and the space that are occupied by the different groups.
+
+### Interaction index
+$$\sum_{i=1}^n[(\frac{x_1}{X})(\frac{y_i}{t_i})]$$
+Where: 
+
+$t_i$ is the total population of area i
+
+$x_i$ is the total minority population of area i
+
+$y_i$ is the total majority population of area i
+
+$X$ is the total minority population over all areas
+
+The interaction index "measures the degree of potential contact, or possibility of interaction, between minority and majority group members” (Massey and Denton, p. 287). Exposure depends on the common residential areas shared by the grops, finding the degree in which minority group members may "experience" segregation. Basically, it measures the possible interaction that could occur between members of the minority group and the majority group. More accurately, this index looks at the exposure of minority group members to members of the majority group as the minority-weighted average of the majority proportion of the population in each areal unit. The metric is defined to go from 0.0 to 1.0 where there is less or more interaction between the members of the different groups (complete segregation to complete interaction). The benefit of such a metric is that it allows us to interpret the probable amount of interactions that occur between the minority group and majority groups. But the interaction index overlooks the distance between areas, the movements that may occur between areas and the distribution of the groups.
+
+### Correlation ratio
+$$ \frac{I-P}{1-P} = \frac{\sum_{i=1}^n[(\frac{x_1}{X})(\frac{x_i}{t_i})]-P}{1-P}$$
+Where: 
+
+$t_i$ is the total population of area i
+
+$x_i$ is the total minority population of area i
+
+$I$ is the Isolation index
+
+$X$ is the total minority population over all areas
+
+$P$ is the proportion of the metropolitan area's population that is minority
+
+The correlation ratio measures a "standardized version" of the isolation index. Similar to the interaction index, this is a measure of exposure in which it measures the degree of potential contact or possibility of interaction between members of the groups but only looks at the probability of exposure between members of the minority groups. In the Census Bureau they mention that the interaction indexes representing minority exposure to majority members and majority exposure to minority members will be equal only if the two groups constitute the same proportion of the population. An adjustment was made to the isolation index to control asymmetry, which resulted in the correlation ratio. This is done by taking the proportion measures used in the isolation index minus the proportion of the minority group over the entire city and dividing it by the proprtion of majority group over the entire city. The correlation ratio also goes from 0.0 to 1.0 where a lower index would indicate less isolation and a higher index would indicate more isolation (complete integration to complete segregation). The drawbacks of this index is similar to the interaction metric, in which it does not look at the physical space that is occupied by the populations but simply within a unit area.
+
+## Metric Comparison
+
+```{r}
+# Metrics data in a table
+kable(metrics_data[,1:5], caption="Segregation Metric Indexes for Different Cities")
+```
+
+If the segregation metrics all perform well, we should see somewhat similar results where the indexes should show relatively similar shapes for the dissimilarity, isolation and correlation values. As expected we can also see that interaction and isolation indexes sum to 1 because there are only 2 groups in the data set. If done correctly, the interaction index has a negative relationship with the other indexes due to the reversed meaning for the measurement from 0.0 to 1.0.
+```{r, fig.width=10, fig.height=5}
+grid.arrange(diss_chart, inter_chart, corr_chart, nrow=1)
+```
+
+The dissimilarity bar graph shows that the areas are segrated by a range. We see that the index values range from about 0.32 to 0.62 with a difference of 0.3 between the most and least segregated cities.
+
+Compared to the dissimilarity indexes, we see that the rankings almost seem opposite in the interaction index. The range is also drastically different. As stated previously, the least segregated city would be the higher values in the interaction index. The least segregated city is at around 0.69 and the most is at 0.22 with a difference of about 0.47. The interaction is showing a larger range of segregation between the cities. This maybe due to the fact that interaction takes the factors area proprtions $x_i$ over the total proprtion $X$ as a factor. There could be a smaller proportion of white population in areas of Baltimore resulting in the lower probabilities of interaction. This is supported by the fact that it is highly ranked in the correlation data, showing that there is higher isolation caused by higher populations of non white.
+
+The correlation ratio is much lower compared to both dissimilarity and interaction. It ranges from 0.13 to 0.45 which is around a difference of 0.32. We see that the shape and city rankings are more similar to the dissimilarity index but with some differences. When the total proportion of minority in the entire area is used in the index, it standardizes the index possibly adding qualities of an eveness measure.
+
+```{r}
+# City segregation rankings sorted in dissimilarity rank
+ordered_ranks <- metrics_data[order(metrics_data$dissimilarity_rank),][,-2:-6]
+kable(ordered_ranks, caption="City Segregation Metric Rankings")
+```
+
+*Most segregated by metrics*
+
+- Dissimilarity: Milwaukee
+
+- Interaction: Baltimore
+
+- Correlation: Milwaukee
+
+*Least segregated by metrics*
+
+- Dissimilarity: Oklahoma City
+
+- Interaction: Denver
+
+- Correlation: Denver
+
+The segregation rankings show some of the differences in the rankings of the cities from most to least segregated. The interaction index was ranked in descending order in order for the segregation rankings of the other metrics to be matching. The dissimilarity indexes and correlation_rank indexes seemed to performed most similarly where they had 6 rankings that matched. This maybe due to the fact that standardizing the isolation index resulted in giving it qualities of a measure of eveness. Despite the fact that both interaction and correlation are related to isolation, we only see 3 matches in the rankings. The least similar ranks were between dissimilarity and interaction.  We see that there is only 1 city that matches in the rankings. I believe that interaction index had the most differences because there could be asymmetrical populations within cities leading to lower probabilities of interactions of white and non white populations, which are not reflected as much in the other two metrics. However, the results are not too far off in rankings except for Syracuse and Chicago where we can see ranking differences of 5 and 6 between dissimilarity and interaction. We see that Chicago is ranked lower and Syracuse is ranked higher in interaction. The interaction index is dependant on the proprtion of non white populations $x_i$ over total non white $X$ and white populations $y_i$ over the area population $t_i$ within each area whereas dissimilarity just measures the evenness distributed across areas. We may assume that Chicago has a higher population of non white and Syracuse has a lower population of non white people leading to lower and higher probabilities of member interactions by the non white population.
+
+The use of the different metrics yield different understandings across the cities. The dissimilarity shows us the distribution of minorities across the different areas of cities which is more dependant on overall proprtion of minorities in the total area. The interaction shows us the probability of interactions between non white with white populations within each area, resulting in an index that defines segregation with emphasis on the proportion of non white within the areas of the cities. The correlation ratio is a standardized isolation index that seems to tell us more about the probability of interaction between the minority groups across an entire city accounting for asymmetrical populations within the areas against the total area. Respectively, we get to know the distribution of non white, the probability of interactions across areas of cities, and the probability of isolation across the cities.
+
+```{r}
+# Scatter plots of the different metrics
+pairs(metrics_data[,2:5],  main = "Indexes of Segregation Metrics")
+```
+
+All the indexes have some type of relationship with one another. The interaction and isolation indexes are perfectly correlated with a relationship of -1 because the data set only has 2 different groups. The correlation and dissimilarity index values are most closely clustered towards a line with a positive relationship which agrees with previous explanitions. The chart with dissimilarity and interaction and the chart with correlation and interaction both show negative relationships with higher variance compared to the chart of dissimilarity and correlation.
+
+## Metric Proposal
+$$(\frac{D+C}{2}) = \frac{\frac{\sum_{i=1}^n[t_i|(p_i-P)|]}{[2T^2P(1-P)]} + \frac{\sum_{i=1}^n[(\frac{x_1}{X})(\frac{x_i}{t_i})]-P}{1-P}}{2}$$
+Where:
+
+$D$ is the dissimilarity index
+
+$C$ is the correlation index
+
+My metric proposal is simply a combination of the metrics. In order to combine the interaction and dissimilarity indexes I simply took the sum of the dissimilarity and correlation ratio and divided them to create a single value. I decided to do this in order to take aspects of both eveness and exposure. This metric maybe used over the individual metrics because it takes into account the aspects of dissimilarity and correlation to form a more accurate assessment of the minority groups. Since there are only two groups the isolation and interaction indexes will sum to 1.0, so I found it unnecesary to use the interaction index because I have included the correlation ratio which is an adjusted version of the isolation index (in this case which is just $1 - interaction index$) that accounts for asymmetry. The advantage of this metric is that it takes the average of two metrics, taking into account the qualities of both measure of evenness and a measure of exposure. The drawback of this metric is that it mainly focuses on the minority groups rather than the majority in terms of both distribution and interactions. Similar to all three metrics described above, this metric allso overlooks possible factors that maybe important such as the physical space of the areas and the physical distance between areas.
+```{r}
+prop_chart1
+```
+
+There is nothing surprising about the results of the values. We see that the values of my proposed index ends up becoming an average between the two combined indexes. The range between the most and least segregated areas in this my proposed metric is about 0.3. The city rankings seem to be closest to the dissimilarity index where there are only 4 cities that are ranked differently then the dissimilarity index for Chicago, Dayton, Syracuse and Pitsburgh.
+
+Comparing the proposed metric with interaction, we see that the results are very different which is to be expected because interaction indexes indicate reversed meanings. It would make more sense if the index values were [1 - interaction] or simply the isolation index.
+
+```{r}
+prop_chart2
+```
+
+Comparing the values to isolation, we see that there are similarities especially with Syracuse and Pitsburgh. However, we don't see as high values of the proposed indexes for locations such as Baltimore and Chicago due to the lower values that exist in the correlation and dissimilarity indexes. Depending on how "segregation" is defined, this could be better metric because it reduces the effect of being highly dependant simply on population proportions of the groups within the cities.
